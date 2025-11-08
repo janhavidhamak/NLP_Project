@@ -1,0 +1,31 @@
+# Core Python utilities
+numpy
+pandas
+matplotlib
+seaborn
+
+langdetect 
+langcodes
+
+# Web scraping
+beautifulsoup4
+requests
+selenium
+
+# Text preprocessing
+nltk
+spacy
+langdetect
+googletrans==4.0.0-rc1
+textblob
+
+# Vectorization and modeling
+scikit-learn
+gensim
+
+# Clustering and similarity
+scipy
+
+# Optional helpers for saving, visualizing, etc.
+wordcloud
+tqdm
