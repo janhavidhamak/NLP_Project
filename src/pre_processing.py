@@ -29,6 +29,8 @@ def preprocess_text(text):
 
 def translate_to_english(text):
     try:
+        if not text.strip():
+            return ""
         translated = translator.translate(text, src='auto', dest='en')
         return translated.text
     except Exception as e:
@@ -41,15 +43,18 @@ def tokenize_and_lemmatize(text):
     lemmas = [lemmatizer.lemmatize(t) for t in tokens]
     return " ".join(lemmas)
 
-# Load dataset
-df = pd.read_csv('data/product_reviews.csv')
+# ✅ Read CSV properly
+df = pd.read_csv('data/amazon_reviews.csv', header=0, names=['Review'])
+df['Review'] = df['Review'].fillna('')
 
 # Preprocess
-df['preprocessed_text'] = df['review_text'].apply(preprocess_text)
+df['preprocessed_text'] = df['Review'].apply(preprocess_text)
 
-# Detect language and convert to full name
-df['lang_code'] = df['preprocessed_text'].apply(lambda x: detect(str(x)))
-df['language'] = df['lang_code'].apply(lambda code: langcodes.Language.get(code).language_name())
+# Detect language
+df['lang_code'] = df['preprocessed_text'].apply(lambda x: detect(x) if x.strip() else 'unknown')
+df['language'] = df['lang_code'].apply(
+    lambda code: langcodes.Language.get(code).language_name() if code != 'unknown' else 'Unknown'
+)
 
 # Translate
 df['translated_text'] = df['preprocessed_text'].apply(translate_to_english)
@@ -59,6 +64,4 @@ df['processed_text'] = df['translated_text'].apply(tokenize_and_lemmatize)
 
 # Save
 df.to_csv('data/processed_reviews.csv', index=False, encoding='utf-8')
-
-# Preview
-print(df[['date', 'review_text', 'language', 'translated_text', 'processed_text']].head())
+print(df[['Review', 'language', 'translated_text', 'processed_text']].head())

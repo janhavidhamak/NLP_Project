@@ -1,91 +1,84 @@
-import os
-import requests
-import zipfile
+
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import pandas as pd
+import time, random
 
-# -------------------------------
-# CONFIGURATION
-# -------------------------------
-CHROME_VERSION = "129.0.6668.100"
-CHROME_BASE = "https://storage.googleapis.com/chrome-for-testing-public"
-CHROME_URL = f"{CHROME_BASE}/{CHROME_VERSION}/linux64/chrome-linux64.zip"
-DRIVER_URL = f"{CHROME_BASE}/{CHROME_VERSION}/linux64/chromedriver-linux64.zip"
-
-CHROME_DIR = "/tmp/chrome"
-DRIVER_DIR = "/tmp/chromedriver"
-
-os.makedirs(CHROME_DIR, exist_ok=True)
-os.makedirs(DRIVER_DIR, exist_ok=True)
-
-# -------------------------------
-# DOWNLOAD & EXTRACT CHROME
-# -------------------------------
-if not os.path.exists(os.path.join(CHROME_DIR, "chrome-linux64", "chrome")):
-    print("⬇️ Downloading Chrome...")
-    r = requests.get(CHROME_URL)
-    chrome_zip = os.path.join(CHROME_DIR, "chrome.zip")
-    with open(chrome_zip, "wb") as f:
-        f.write(r.content)
-    with zipfile.ZipFile(chrome_zip, "r") as zip_ref:
-        zip_ref.extractall(CHROME_DIR)
-    print("✅ Chrome extracted")
-
-# -------------------------------
-# DOWNLOAD & EXTRACT CHROMEDRIVER
-# -------------------------------
-if not os.path.exists(os.path.join(DRIVER_DIR, "chromedriver-linux64", "chromedriver")):
-    print("⬇️ Downloading ChromeDriver...")
-    r = requests.get(DRIVER_URL)
-    driver_zip = os.path.join(DRIVER_DIR, "chromedriver.zip")
-    with open(driver_zip, "wb") as f:
-        f.write(r.content)
-    with zipfile.ZipFile(driver_zip, "r") as zip_ref:
-        zip_ref.extractall(DRIVER_DIR)
-    print("✅ ChromeDriver extracted")
-
-# -------------------------------
-# SETUP SELENIUM
-# -------------------------------
-chrome_binary = os.path.join(CHROME_DIR, "chrome-linux64", "chrome")
-chromedriver_binary = os.path.join(DRIVER_DIR, "chromedriver-linux64", "chromedriver")
-os.chmod(chromedriver_binary, 0o755)
-
+service = Service(r"C:\WebDrivers\chromedriver.exe")
 options = Options()
-options.binary_location = chrome_binary
-options.add_argument("--headless=new")
-options.add_argument("--no-sandbox")
+
+# Use temporary Chrome profile to avoid crashes
+options.add_argument("--user-data-dir=C:/Users/Janhavi/TempChromeProfile")
+options.add_argument("--start-maximized")
+options.add_argument("--disable-blink-features=AutomationControlled")
 options.add_argument("--disable-gpu")
+options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
-options.add_argument("--remote-debugging-port=9222")
-options.add_argument("--disable-software-rasterizer")
-options.add_argument("--window-size=1920,1080")
 
+# Random user-agent for safety
+agents = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/118.0 Safari/537.36"
+]
+options.add_argument(f"user-agent={random.choice(agents)}")
 
-
-options = Options()
-options.add_argument('--headless')  # Run in headless mode
-options.add_argument('--no-sandbox')  # Disable the sandbox (important in containers)
-options.add_argument('--disable-dev-shm-usage')  # Disable /dev/shm usage (common in Docker)
-options.add_argument('--disable-gpu')  # Disable GPU (optional)
-options.add_argument('--remote-debugging-port=9222')  # Enables remote debugging
-
-service = Service('/path/to/chromedriver')
 driver = webdriver.Chrome(service=service, options=options)
+reviews = []
 
+for page in range(1, 9):  # up to 20 pages
+    url = f"https://www.amazon.com/product-reviews/B0CZHT35WQ/ref=cm_cr_getr_d_paging_btm_next_{page}?pageNumber={page}"
+    #url = f"https://www.amazon.in/product-reviews/B0D5BN76MK/ref=cm_cr_getr_d_paging_btm_next_{page}?pageNumber={page}&reviewerType=all_reviews"
+#B0CRCMCBTJ
+    driver.get(url)
+    time.sleep(10)
 
-service = Service(chromedriver_binary)
-driver = webdriver.Chrome(service=service, options=options)
+    # Handle login prompt
+    if "ap/signin" in driver.current_url:
+        print("Amazon login page detected! Please log in manually once in the opened browser.")
+        input("Press ENTER after logging in...")
+        continue
 
-# -------------------------------
-# TEST
-# -------------------------------
-driver.get("https://www.google.com")
-print("✅ Chrome launched successfully!")
-print("Page title:", driver.title)
+    # Scroll multiple times to load all reviews
+    for _ in range(5):
+        driver.execute_script("window.scrollBy(0, document.body.scrollHeight);")
+        time.sleep(random.uniform(1.5, 3))
+
+    # Click "See more" / "Read more" to expand reviews
+    see_more_buttons = driver.find_elements(By.XPATH, "//span[@data-action='columnbalancing-showfullreview']/a")
+    for btn in see_more_buttons:
+        try:
+            driver.execute_script("arguments[0].click();", btn)
+            time.sleep(1)
+        except:
+            pass
+
+    # Collect reviews
+    try:
+        elements = WebDriverWait(driver, 10).until(
+            EC.presence_of_all_elements_located((By.XPATH, "//span[@data-hook='review-body']"))
+        )
+    except:
+        print(f"No reviews found on page {page}")
+        continue
+
+    for e in elements:
+        text = e.text.strip()
+        if text:
+            reviews.append(text)
+
+    print(f"Page {page} done. Total reviews collected: {len(reviews)}")
 
 driver.quit()
+
+# Save unique reviews
+df = pd.DataFrame(reviews, columns=["Review"])
+# df.drop_duplicates(inplace=True)
+df.to_csv("amazon_reviews.csv", index=False, encoding="utf-8")
+print(f"\n Saved {len(df)} unique reviews to amazon_reviews.csv")
+
+
+
