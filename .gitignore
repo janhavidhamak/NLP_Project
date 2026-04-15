@@ -1,0 +1,14 @@
+# Generated output files (reproduced by running notebooks)
+data/sentiment_analysis_results.csv
+data/model_performance_metrics.txt
+data/confusion_matrix.png
+data/model_weights.png
+data/sentiment_comparison.png
+
+# Word2Vec model binary
+word2vec_skincare.bin
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
