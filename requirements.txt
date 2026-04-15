@@ -29,3 +29,7 @@ scipy
 # Optional helpers for saving, visualizing, etc.
 wordcloud
 tqdm
+
+# Streamlit UI
+streamlit
+plotly
