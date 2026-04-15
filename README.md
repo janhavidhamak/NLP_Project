@@ -29,9 +29,9 @@ The app opens at **http://localhost:8501** and provides three tabs:
 
 | Tab | Description |
 |-----|-------------|
-| 📊 Data Analysis | Sentiment distribution charts, confusion matrix, performance metrics, Lexicon vs LinearSVC comparison |
-| 🔍 Sentiment Predictor | Enter any review text and get a real-time sentiment prediction with confidence scores |
-| 📈 Model Insights | Embedding dimension weights, top sentiment words, cross-validation results, model configuration |
+|  Data Analysis | Sentiment distribution charts, confusion matrix, performance metrics, Lexicon vs LinearSVC comparison |
+|  Sentiment Predictor | Enter any review text and get a real-time sentiment prediction with confidence scores |
+|  Model Insights | Embedding dimension weights, top sentiment words, cross-validation results, model configuration |
 
 > On the first run the models are trained from `data/sentiment_results.csv` and cached automatically — subsequent page loads are instant.
 
